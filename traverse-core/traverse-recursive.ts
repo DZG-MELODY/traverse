@@ -65,7 +65,7 @@ export interface TraverseResult {
  * @param nodes 遍历顶级节点
  * @param options 遍历配置项
  */
-export function traverse(
+export function traverse_recursive(
   nodes: TraverseNode[],
   options: TraverseOptions
 ): Promise<TraverseResult> {
