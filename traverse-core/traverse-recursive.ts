@@ -38,7 +38,7 @@ export type TraversePredicate<T extends TraverseNode> = (
 export type TraverseNodeHandler<T extends TraverseNode, O> = (
   node: T,
   nodeParams: TraverseNodeParams<T>,
-  options: TraverseOptions<T> & O,
+  options: O,
   result: TraverseResult
 ) => T;
 
@@ -47,16 +47,16 @@ export type TraverseNodeHandler<T extends TraverseNode, O> = (
  */
 export interface TraverseOptions<T extends TraverseNode, O> {
   readonly predicate: TraversePredicate<T>;
-  readonly nodeHandle: TraverseNodeHandler<T, O>;
+  readonly nodeHandle: TraverseNodeHandler<T, TraverseOptions<T, O>>;
   readonly exclude?: (
     node: TraverseNode,
     nodeParams: TraverseNodeParams<T>,
-    options: TraverseOptions<T, O>
+    options: TraverseOptions<T, O> & O
   ) => boolean;
   readonly ignore?: (
     node: TraverseNode,
     nodeParams: TraverseNodeParams<T>,
-    options: TraverseOptions<T, O>
+    options: TraverseOptions<T, O> & O
   ) => boolean;
 }
 
@@ -71,19 +71,14 @@ export function traverseRecursive<T>(
   const result = {};
 
   // 判定方法必须为方法
-  if (!(options.predicate && typeof options.predicate === "function")) {
+  if (!options.predicate) {
     throw new Error("predicate is not a function");
   }
 
   // 节点处理必须为方法
-  if (!(options.nodeHandle && typeof options.nodeHandle === "function")) {
+  if (!options.nodeHandle) {
     throw new Error("nodeHandle is not a function");
   }
-
-  const excludeFn =
-    options.exclude && typeof options.exclude === "function" && options.exclude;
-  const ignoreFn =
-    options.ignore && typeof options.ignore === "function" && options.ignore;
 
   // 递归遍历所有节点
   function _traverse(
@@ -98,14 +93,14 @@ export function traverseRecursive<T>(
 
     // 处理node节点
     // 如果满足排除条件，则不进行节点处理
-    if (excludeFn && excludeFn(node, nodeParams, options)) {
+    if (options.exclude && options.exclude(node, nodeParams, options)) {
       node = node;
     } else {
       node = options.nodeHandle(node, nodeParams, options, result);
     }
 
     // 如果满足忽略条件，则不再进行下级遍历
-    if (ignoreFn && ignoreFn(node, nodeParams, options)) return;
+    if (options.ignore && options.ignore(node, nodeParams, options)) return;
 
     // 非叶子节点继续遍历
     if (!done) {
@@ -129,7 +124,7 @@ export function traverseRecursive<T>(
     }
   }
 
-  // 遍历首层节点
+  // 遍历首层节点
   nodes.forEach((subNode, index) => {
     _traverse(
       subNode,

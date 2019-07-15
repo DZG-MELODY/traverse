@@ -19,20 +19,20 @@ export interface FileNode extends TraverseNode {
   fileStatus: fs.Stats;
 }
 
-export type FileNodeHandle = (
-  node: FileNode,
-  params: TraverseNodeParams<FileNode>,
-  options: TraverseOptions<FileNode>,
-  result: PlainObject
-) => void;
-
 interface FileTraverseInnerOptions {
   fileNodeHandle?: FileNodeHandle;
   [propName: string]: any;
 }
 
 export type FileTraverseOptions = FileTraverseInnerOptions &
-  TraverseOptions<FileNode>;
+  TraverseOptions<FileNode, FileTraverseInnerOptions>;
+
+export type FileNodeHandle = (
+  node: FileNode,
+  params: TraverseNodeParams<FileNode>,
+  options: FileTraverseOptions,
+  result: PlainObject
+) => void;
 
 // 迭代谓词方法
 const filePredicate: TraversePredicate<FileNode> = fileNode => {
@@ -60,8 +60,9 @@ const fileNodeHandle: TraverseNodeHandler<FileNode, FileTraverseOptions> = (
   result
 ) => {
   const { fileNodeHandle } = options;
-  if (fileNodeHandle && typeof fileNodeHandle === "function")
+  if (fileNodeHandle) {
     fileNodeHandle(node, nodeParams, options, result);
+  }
   return node;
 };
 
