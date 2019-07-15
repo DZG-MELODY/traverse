@@ -1,7 +1,2 @@
-import * as TraverseRecursive from "./traverse-core/traverse-recursive";
-import * as TraverseFile from "./traverse-file";
-
-export = {
-  ...TraverseRecursive,
-  ...TraverseFile
-};
+export * from "./traverse-core/traverse-recursive";
+export * from "./traverse-files";

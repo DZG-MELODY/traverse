@@ -1,6 +1,6 @@
 {
   "name": "traverse-all",
-  "version": "1.0.0-beta-2",
+  "version": "1.0.0-beta-6",
   "description": "methods to traverse every thing",
   "main": "./dist/index.js",
   "types": "./dist/types/index.d.ts",

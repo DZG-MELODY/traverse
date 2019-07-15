@@ -6,7 +6,7 @@ import {
   TraversePredicate,
   TraverseNodeHandler,
   TraverseNodeParams,
-  traverse_recursive
+  traverseRecursive
 } from "../traverse-core/traverse-recursive";
 import { PlainObject } from "../shared/types";
 
@@ -21,28 +21,29 @@ export interface FileNode extends TraverseNode {
 
 export type FileNodeHandle = (
   node: FileNode,
-  params: TraverseNodeParams,
-  options: TraverseOptions,
+  params: TraverseNodeParams<FileNode>,
+  options: TraverseOptions<FileNode>,
   result: PlainObject
 ) => void;
 
-/**
- *
- */
-export interface FileTraverseOptions extends TraverseOptions {
+interface FileTraverseInnerOptions {
   fileNodeHandle?: FileNodeHandle;
   [propName: string]: any;
 }
 
+export type FileTraverseOptions = FileTraverseInnerOptions &
+  TraverseOptions<FileNode>;
+
 // 迭代谓词方法
-const filePredicate: TraversePredicate = (fileNode: TraverseNode) => {
-  const { filePath } = fileNode as FileNode;
+const filePredicate: TraversePredicate<FileNode> = fileNode => {
+  const { filePath } = fileNode;
   const hasChildFile =
     fs.existsSync(filePath) && fs.statSync(filePath).isDirectory();
-  const fileNodes = hasChildFile
+  const fileNodes: Array<FileNode> = hasChildFile
     ? fs.readdirSync(filePath).map(file => ({
         fileName: file,
-        filePath: path.resolve(filePath, file)
+        filePath: path.resolve(filePath, file),
+        fileStatus: fs.statSync(path.resolve(filePath, file))
       }))
     : [];
   return {
@@ -52,30 +53,28 @@ const filePredicate: TraversePredicate = (fileNode: TraverseNode) => {
 };
 
 // 文件节点处理方法
-const fileNodeHandle: TraverseNodeHandler = (
+const fileNodeHandle: TraverseNodeHandler<FileNode, FileTraverseOptions> = (
   node,
   nodeParams,
   options,
   result
 ) => {
-  const { filePath } = node as FileNode;
-  (node as FileNode).fileStatus = fs.statSync(filePath);
-  const { fileNodeHandle } = options as FileTraverseOptions;
+  const { fileNodeHandle } = options;
   if (fileNodeHandle && typeof fileNodeHandle === "function")
-    fileNodeHandle(node as FileNode, nodeParams, options, result);
+    fileNodeHandle(node, nodeParams, options, result);
   return node;
 };
 
-export function traverse_file(
+export function traverseFiles(
   directories: string[],
-  options: FileTraverseOptions
+  options: FileTraverseInnerOptions
 ) {
   const dirNodes: FileNode[] = directories.map(dir => ({
     fileName: path.basename(dir),
     filePath: path.resolve(dir),
     fileStatus: fs.statSync(path.resolve(dir))
   }));
-  return traverse_recursive(
+  return traverseRecursive<FileNode>(
     dirNodes,
     Object.assign(
       {
