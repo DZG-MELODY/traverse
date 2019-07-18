@@ -2,11 +2,11 @@ import fs from "fs";
 import path from "path";
 import {
   TraverseNode,
-  TraverseOptions,
   TraversePredicate,
   TraverseNodeHandler,
   TraverseNodeParams,
-  traverseRecursive
+  traverseRecursive,
+  TraverseConditionOptions
 } from "../traverse-core/traverse-recursive";
 import { PlainObject } from "../shared/types";
 
@@ -25,7 +25,7 @@ interface FileTraverseInnerOptions {
 }
 
 export type FileTraverseOptions = FileTraverseInnerOptions &
-  TraverseOptions<FileNode, FileTraverseInnerOptions>;
+  TraverseConditionOptions<FileNode>;
 
 export type FileNodeHandle = (
   node: FileNode,
@@ -53,13 +53,13 @@ const filePredicate: TraversePredicate<FileNode> = fileNode => {
 };
 
 // 文件节点处理方法
-const fileNodeHandle: TraverseNodeHandler<FileNode, FileTraverseOptions> = (
+const fileNodeHandle: TraverseNodeHandler<FileNode> = (
   node,
   nodeParams,
   options,
   result
 ) => {
-  const { fileNodeHandle } = options;
+  const { fileNodeHandle } = options as FileTraverseOptions;
   if (fileNodeHandle) {
     fileNodeHandle(node, nodeParams, options, result);
   }
@@ -68,8 +68,8 @@ const fileNodeHandle: TraverseNodeHandler<FileNode, FileTraverseOptions> = (
 
 export function traverseFiles(
   directories: string[],
-  options: FileTraverseInnerOptions
-) {
+  options: FileTraverseOptions
+): PlainObject {
   const dirNodes: FileNode[] = directories.map(dir => ({
     fileName: path.basename(dir),
     filePath: path.resolve(dir),

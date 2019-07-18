@@ -1,4 +1,4 @@
-import { BaseOptions } from "../shared/types";
+import { PlainObject } from "../shared/types";
 
 /**
  * 遍历节点
@@ -35,39 +35,41 @@ export type TraversePredicate<T extends TraverseNode> = (
 /**
  * 文件节点处理方法
  */
-export type TraverseNodeHandler<T extends TraverseNode, O> = (
+export type TraverseNodeHandler<T extends TraverseNode> = (
   node: T,
   nodeParams: TraverseNodeParams<T>,
-  options: O,
-  result: TraverseResult
+  options: TraverseOptions<T>,
+  result: PlainObject
 ) => T;
+
+export interface TraverseConditionOptions<T extends TraverseNode> {
+  readonly exclude?: (
+    node: T,
+    nodeParams: TraverseNodeParams<T>,
+    options: TraverseOptions<T>
+  ) => boolean;
+  readonly ignore?: (
+    node: T,
+    nodeParams: TraverseNodeParams<T>,
+    options: TraverseOptions<T>
+  ) => boolean;
+}
+
+export interface TraverseHandleOptions<T extends TraverseNode> {
+  readonly predicate: TraversePredicate<T>;
+  readonly nodeHandle: TraverseNodeHandler<T>;
+}
 
 /**
  * 遍历选项
  */
-export interface TraverseOptions<T extends TraverseNode, O> {
-  readonly predicate: TraversePredicate<T>;
-  readonly nodeHandle: TraverseNodeHandler<T, TraverseOptions<T, O>>;
-  readonly exclude?: (
-    node: TraverseNode,
-    nodeParams: TraverseNodeParams<T>,
-    options: TraverseOptions<T, O> & O
-  ) => boolean;
-  readonly ignore?: (
-    node: TraverseNode,
-    nodeParams: TraverseNodeParams<T>,
-    options: TraverseOptions<T, O> & O
-  ) => boolean;
-}
-
-export interface TraverseResult {
-  [propName: string]: any;
-}
+export type TraverseOptions<T> = TraverseConditionOptions<T> &
+  TraverseHandleOptions<T>;
 
 export function traverseRecursive<T>(
   nodes: T[],
-  options: TraverseOptions<T, BaseOptions>
-): TraverseResult {
+  options: TraverseOptions<T>
+): PlainObject {
   const result = {};
 
   // 判定方法必须为方法
@@ -84,7 +86,7 @@ export function traverseRecursive<T>(
   function _traverse(
     node: T,
     nodeParams: TraverseNodeParams<T>,
-    options: TraverseOptions<T, BaseOptions>
+    options: TraverseOptions<T>
   ): void {
     // 当前节点如果有子节点，则先将该节点推入到path路径中，遍历完成后再吐出
     const { done, iterators } = options.predicate(node);
